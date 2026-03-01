@@ -1,0 +1,7 @@
+{
+  "name": "Akhada Management System",
+  "description": "A portal for Akhada administration to manage Sadhu and Aghori profiles with automated ID card and QR code generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
