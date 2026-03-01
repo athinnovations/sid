@@ -7,33 +7,7 @@ import { app, supabase } from "./src/api-app.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Attempt to initialize storage bucket
-async function initStorage() {
-  try {
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    if (listError) throw listError;
-
-    const exists = buckets.find(b => b.name === 'photos');
-    if (!exists) {
-      console.log("Attempting to create 'photos' bucket...");
-      const { error: createError } = await supabase.storage.createBucket('photos', {
-        public: true,
-        allowedMimeTypes: ['image/jpeg', 'image/png'],
-        fileSizeLimit: 5242880 // 5MB
-      });
-      if (createError) {
-        console.warn("Could not auto-create bucket (this is normal with anon keys):", createError.message);
-      } else {
-        console.log("Successfully created 'photos' bucket.");
-      }
-    }
-  } catch (err) {
-    console.warn("Storage initialization skipped (likely missing permissions or bucket already exists).");
-  }
-}
-
 async function startServer() {
-  await initStorage();
   const PORT = 3000;
 
   // Vite middleware for development

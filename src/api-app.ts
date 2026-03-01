@@ -1,5 +1,6 @@
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -8,6 +9,13 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Initialize Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -52,35 +60,17 @@ app.post("/api/profiles", async (req, res) => {
   try {
     let finalPhotoUrl = base64Photo;
 
-    // If photo is base64, upload to Supabase Storage
+    // If photo is base64, upload to Cloudinary
     if (base64Photo && base64Photo.startsWith('data:image')) {
       try {
-        const buffer = Buffer.from(base64Photo.split(',')[1], 'base64');
-        const fileName = `${id}-${Date.now()}.jpg`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('photos')
-          .upload(fileName, buffer, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-
-        if (uploadError) {
-          if (uploadError.message?.includes('not found') || (uploadError as any).status === 404) {
-            console.error("Supabase Storage Error: The 'photos' bucket does not exist.");
-            finalPhotoUrl = base64Photo;
-          } else {
-            throw uploadError;
-          }
-        } else {
-          const { data: publicUrlData } = supabase.storage
-            .from('photos')
-            .getPublicUrl(fileName);
-          
-          finalPhotoUrl = publicUrlData.publicUrl;
-        }
-      } catch (storageErr) {
-        console.error("Storage upload failed, falling back to base64:", storageErr);
+        const uploadResponse = await cloudinary.uploader.upload(base64Photo, {
+          folder: "akhada_profiles",
+          public_id: id,
+          overwrite: true,
+        });
+        finalPhotoUrl = uploadResponse.secure_url;
+      } catch (cloudinaryErr) {
+        console.error("Cloudinary upload failed, falling back to base64:", cloudinaryErr);
         finalPhotoUrl = base64Photo;
       }
     }
