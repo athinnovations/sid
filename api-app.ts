@@ -6,8 +6,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_ANON_KEY || "";
+const supabaseUrl = process.env.SUPABASE_URL || "https://lpiqjlwotnlfpdhyykia.supabase.co";
+const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwaXFqbHdvdG5sZnBkaHl5a2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNTA5NjcsImV4cCI6MjA4NzkyNjk2N30.8hlXIN-CdQtBMcbZlgsnYHYjWOb8TZvLoMY7ogq8evU";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize Cloudinary
