@@ -5,20 +5,40 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+console.log("Initializing API App...");
+console.log("Supabase URL present:", !!process.env.SUPABASE_URL || "Using fallback");
+
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || "https://lpiqjlwotnlfpdhyykia.supabase.co";
 const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwaXFqbHdvdG5sZnBkaHl5a2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNTA5NjcsImV4cCI6MjA4NzkyNjk2N30.8hlXIN-CdQtBMcbZlgsnYHYjWOb8TZvLoMY7ogq8evU";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+console.log("Supabase client initialized");
+
 // Initialize Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  console.log("Cloudinary initialized");
+} else {
+  console.log("Cloudinary config missing, skipping initialization");
+}
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
+
+// Health check route for debugging
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    supabase: !!supabaseUrl,
+    cloudinary: !!process.env.CLOUDINARY_CLOUD_NAME,
+    env: process.env.NODE_ENV
+  });
+});
 
 // API Routes
 app.get("/api/profiles", async (req, res) => {
@@ -28,10 +48,14 @@ app.get("/api/profiles", async (req, res) => {
       .select("*")
       .order("created_at", { ascending: false });
     
-    if (error) throw error;
-    res.json(data);
+    if (error) {
+      console.error("Supabase error fetching profiles:", error);
+      return res.status(500).json({ error: error.message, details: error });
+    }
+    
+    res.json(data || []);
   } catch (error) {
-    console.error(error);
+    console.error("Unexpected error fetching profiles:", error);
     res.status(500).json({ error: "Failed to fetch profiles" });
   }
 });
@@ -44,11 +68,15 @@ app.get("/api/profiles/:id", async (req, res) => {
       .eq("id", req.params.id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Supabase error fetching profile ${req.params.id}:`, error);
+      return res.status(error.code === 'PGRST116' ? 404 : 500).json({ error: error.message });
+    }
+    
     if (!data) return res.status(404).json({ error: "Profile not found" });
     res.json(data);
   } catch (error) {
-    console.error(error);
+    console.error(`Unexpected error fetching profile ${req.params.id}:`, error);
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 });

@@ -263,18 +263,30 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetch('/api/profiles')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Server error');
+        return res.json();
+      })
       .then(data => {
-        setProfiles(data);
+        if (Array.isArray(data)) {
+          setProfiles(data);
+        } else {
+          console.error('Expected array of profiles, got:', data);
+          setProfiles([]);
+        }
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Fetch error:', err);
+        setProfiles([]);
+        setLoading(false);
+      });
   }, []);
 
-  const uniqueAkhadas = ['All', ...new Set(profiles.map(p => p.akhada_name))];
+  const uniqueAkhadas = ['All', ...new Set(Array.isArray(profiles) ? profiles.map(p => p.akhada_name) : [])];
   const uniqueTitles = ['All', 'Sadhu', 'Aghori', 'Mahant', 'Shri Mahant', 'Naga Sadhu'];
 
-  const filteredProfiles = profiles.filter(p => {
+  const filteredProfiles = Array.isArray(profiles) ? profiles.filter(p => {
     const matchesSearch = 
       p.name.toLowerCase().includes(search.toLowerCase()) || 
       p.akhada_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -285,7 +297,7 @@ const Dashboard = () => {
     const matchesAkhada = filterAkhada === 'All' || p.akhada_name === filterAkhada;
 
     return matchesSearch && matchesTitle && matchesAkhada;
-  });
+  }) : [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -514,12 +526,18 @@ const ProfileView = () => {
 
   useEffect(() => {
     fetch(`/api/profiles/${id}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Profile not found');
+        return res.json();
+      })
       .then(data => {
         setProfile(data);
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Fetch error:', err);
+        setLoading(false);
+      });
   }, [id]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div></div>;
@@ -749,12 +767,18 @@ const IDCardPage = () => {
 
   useEffect(() => {
     fetch(`/api/profiles/${id}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Profile not found');
+        return res.json();
+      })
       .then(data => {
         setProfile(data);
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Fetch error:', err);
+        setLoading(false);
+      });
   }, [id]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div></div>;
